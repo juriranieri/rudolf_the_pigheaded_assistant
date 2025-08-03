@@ -12,6 +12,14 @@ This is a personal assistant built with Python and Gemini.
 
 * To be defined
 
+## 📝 Platform Notes
+
+### macOS
+
+On macOS, you may need to grant accessibility permissions to your terminal or IDE for the audio recording hotkey to work correctly.
+
+Go to **System Settings > Privacy & Security > Accessibility** and add your terminal application (e.g., Terminal, iTerm2, VS Code) to the list of allowed applications.
+
 ## 📁 Project Structure
 
 ```

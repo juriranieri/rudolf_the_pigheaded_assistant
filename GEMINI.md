@@ -98,6 +98,16 @@ Try to add `LLM evaluation` to understand if we are writing good code or good pr
 * https://google.github.io/adk-docs/evaluate/
 
 
+## Python Environment
+
+This project uses `pyenv` to manage Python versions and `uv` to manage virtual environments and packages.
+
+* **pyenv**: Ensures that the correct Python version is used, as defined in the `.python-version` file.
+* **uv**: Used for creating and managing the virtual environment (`venv`) and for installing dependencies from `requirements.txt`.
+
+When working on this project, ensure you have `pyenv` and `uv` installed and configured correctly.
+
+
 ## Bugs
 
 * `BUG001` You have a tendency of doing git commit -m "feat: blah `filename`: updated ..".  Stop doing it! Either use single quotes or stop using backticks inside a double-quoted bash string!

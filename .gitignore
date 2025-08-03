@@ -1,5 +1,6 @@
 # Ignore environment variables
 .env
+.env.dist
 
 # Ignore virtual environment
 venv/
@@ -9,3 +10,10 @@ __pycache__/
 
 # Ignore macOS specific files
 .DS_Store
+
+# Ignore swap files
+*.swp
+
+# Ignore recordings
+recordings/
+test_recording.wav
