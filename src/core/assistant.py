@@ -8,17 +8,23 @@ import sounddevice as sd
 import numpy as np
 import scipy.io.wavfile as wav
 import tempfile
-from pynput import keyboard
 import sys
 import select
 import datetime
 import time
+import pvporcupine
+import pyaudio
+import struct
 
 class Assistant:
     """Personal assistant class."""
 
     def __init__(self, mic_index=None):
         """Initializes the assistant."""
+        self.access_key = os.getenv("PICOVOICE_ACCESS_KEY")
+        if not self.access_key:
+            raise ValueError("PICOVOICE_ACCESS_KEY not found in environment variables.")
+
         api_key = os.getenv("PERSONAL_ASSISTANT_GEMINI_API_KEY")
         if not api_key:
             raise ValueError("PERSONAL_ASSISTANT_GEMINI_API_KEY not found in environment variables.")
@@ -37,10 +43,14 @@ class Assistant:
         self.mic_index = mic_index
         self.whisper_model = whisper.load_model("base")
         self.recording = False
-        self.listener = None
         self.stream = None
         self.frames = []
         self.sample_rate = 16000
+        self.silence_threshold = 0.01  # Silence threshold
+        self.silence_duration = 2  # Seconds of silence to stop recording
+        self.porcupine = None
+        self.audio_stream = None
+        self.pa = None
 
     def transcribe_audio(self, file_path):
         """Transcribes audio using Whisper."""
@@ -112,12 +122,22 @@ class Assistant:
         
         self.recording = True
         self.frames = []
-        print("Recording started... Press 'r' again to stop.")
+        print("Recording started...")
 
         def audio_callback(indata, frame_count, time_info, status):
             if status:
                 print(status, file=sys.stderr)
             self.frames.append(indata.copy())
+            
+            # Silence detection
+            if np.abs(indata).mean() < self.silence_threshold:
+                self.silence_frames += 1
+            else:
+                self.silence_frames = 0
+
+            if self.silence_frames > self.sample_rate / frame_count * self.silence_duration:
+                self.stop_recording()
+
 
         self.stream = sd.InputStream(
             samplerate=self.sample_rate,
@@ -126,14 +146,18 @@ class Assistant:
             device=self.mic_index
         )
         self.stream.start()
+        self.silence_frames = 0
+
 
     def stop_recording(self):
         if not self.recording:
             return
 
         print("Recording stopped. Processing...")
-        self.stream.stop()
-        self.stream.close()
+        if self.stream:
+            self.stream.stop()
+            self.stream.close()
+            self.stream = None
         self.recording = False
         
         # Give the stream a moment to close and flush all buffers.
@@ -141,39 +165,48 @@ class Assistant:
 
         threading.Thread(target=self._process_audio).start()
 
-    def on_press(self, key):
-        try:
-            if key.char == 'r':
-                if not self.recording:
-                    self.start_recording()
-                else:
-                    self.stop_recording()
-        except AttributeError:
-            pass
-
     def start(self):
         """Starts the assistant."""
-        print("Assistant started. Press 'r' to start/stop recording, type 'exit' to quit.")
-
-        self.listener = keyboard.Listener(on_press=self.on_press)
-        self.listener.start()
-
+        print("Assistant started. Say 'Google' to start recording.")
         try:
+            self.porcupine = pvporcupine.create(
+                access_key=self.access_key,
+                keywords=['google']
+            )
+            self.pa = pyaudio.PyAudio()
+            self.audio_stream = self.pa.open(
+                rate=self.porcupine.sample_rate,
+                channels=1,
+                format=pyaudio.paInt16,
+                input=True,
+                frames_per_buffer=self.porcupine.frame_length
+            )
+
             while True:
-                if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-                    typed_input = sys.stdin.readline().strip()
-                    if typed_input.lower() == "exit":
-                        break
-                    if typed_input:
-                        response = self.model.generate_content(typed_input)
-                        print(response.text)
+                pcm = self.audio_stream.read(self.porcupine.frame_length)
+                pcm = struct.unpack_from("h" * self.porcupine.frame_length, pcm)
+
+                keyword_index = self.porcupine.process(pcm)
+
+                if keyword_index >= 0:
+                    print("Wake word detected!")
+                    self.start_recording()
+
         except (KeyboardInterrupt, EOFError):
             pass
         finally:
-            if self.listener:
-                self.listener.stop()
-            print("\nAssistant stopped.")
+            self.stop()
 
     def stop(self):
-        if self.listener:
-            self.listener.stop()
+        print("\nAssistant stopped.")
+        if self.porcupine is not None:
+            self.porcupine.delete()
+        if self.audio_stream is not None:
+            self.audio_stream.close()
+        if self.pa is not None:
+            self.pa.terminate()
+
+
+if __name__ == "__main__":
+    assistant = Assistant()
+    assistant.start()

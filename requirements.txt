@@ -1,7 +1,5 @@
 python-dotenv
 google-generativeai
 openai-whisper
-sounddevice
-scipy
-numpy<2.0
-pynput
+pvporcupine
+pyaudio

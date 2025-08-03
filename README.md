@@ -20,6 +20,12 @@ On macOS, you may need to grant accessibility permissions to your terminal or ID
 
 Go to **System Settings > Privacy & Security > Accessibility** and add your terminal application (e.g., Terminal, iTerm2, VS Code) to the list of allowed applications.
 
+## ⚠️ Known Issues
+
+### PyTorch/NumPy Version Mismatch
+
+You may see a `UserWarning` from PyTorch about a NumPy version mismatch. This is because `EfficientWord-Net` requires an older version of NumPy than the one PyTorch was built with. This is a known issue and can be safely ignored.
+
 ## 📁 Project Structure
 
 ```
