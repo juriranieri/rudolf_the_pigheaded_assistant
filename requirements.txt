@@ -1,5 +1,8 @@
 python-dotenv
 google-generativeai
-openai-whisper
+openai-whisper==20240927
+numpy==1.26.4
 pvporcupine
 pyaudio
+pyperclip
+scipy
