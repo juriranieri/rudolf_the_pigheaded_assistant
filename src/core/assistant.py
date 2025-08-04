@@ -15,7 +15,7 @@ import time
 import pvporcupine
 import pyaudio
 import struct
-from core.os_utils import get_selected_text
+from core.os_utils import get_selected_text, take_screenshot
 
 class Assistant:
     """Personal assistant class."""
@@ -54,6 +54,7 @@ class Assistant:
         self.porcupine = None
         self.audio_stream = None # This will be the single, main audio stream
         self.selected_text = None
+        self.screenshot = None
 
     def transcribe_audio(self, file_path):
         """Transcribes audio using Whisper."""
@@ -105,8 +106,12 @@ class Assistant:
                     if self.selected_text:
                         user_input = f"{user_input}\n\nSelected text:\n{self.selected_text}"
 
+                    content = [user_input]
+                    if self.screenshot:
+                        content.append(self.screenshot)
+
                     print("--- Generating response from model ---")
-                    response = self.model.generate_content(user_input)
+                    response = self.model.generate_content(content)
                     print("--- Response received ---")
                     print(response.text)
                 else:
@@ -154,6 +159,11 @@ class Assistant:
                     self.selected_text = get_selected_text()
                     if self.selected_text:
                         print(f"Follow-up instruction for the selected text: '{self.selected_text}'")
+
+                    # Take screenshot
+                    self.screenshot = take_screenshot()
+                    if self.screenshot:
+                        print("Screenshot taken.")
 
                 if self.recording:
                     audio_data = np.frombuffer(in_data, dtype=np.int16)

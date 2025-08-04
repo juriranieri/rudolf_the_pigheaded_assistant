@@ -8,6 +8,8 @@ import time
 from typing import Optional
 
 import pyperclip
+from mss import mss
+from PIL import Image
 
 
 def run_applescript(script: str) -> Optional[str]:
@@ -128,3 +130,19 @@ if __name__ == "__main__":
         print("Make sure the window with the selected text was active.")
 
     print("Your original clipboard has been restored.")
+
+def take_screenshot() -> Optional[Image.Image]:
+    """
+    Takes a screenshot of the entire screen.
+
+    Returns:
+        Optional[Image.Image]: A PIL Image object of the screenshot, or None if an error occurred.
+    """
+    try:
+        with mss() as sct:
+            sct_img = sct.grab(sct.monitors[1])
+            img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+            return img
+    except Exception as e:
+        print(f"An error occurred while taking a screenshot: {e}", file=sys.stderr)
+        return None

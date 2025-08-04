@@ -6,3 +6,5 @@ pvporcupine
 pyaudio
 pyperclip
 scipy
+mss
+Pillow
